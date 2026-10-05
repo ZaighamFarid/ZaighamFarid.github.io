@@ -1,3 +1,22 @@
 document.querySelectorAll('[data-carousel]').forEach(group=>{const rail=group.querySelector('.rail'),prev=group.querySelector('[data-prev]'),next=group.querySelector('[data-next]'),count=group.querySelector('.count');function update(){const end=rail.scrollWidth-rail.clientWidth;prev.disabled=rail.scrollLeft<5;next.disabled=rail.scrollLeft>=end-5;const n=rail.children.length;const step=rail.children[0]?.getBoundingClientRect().width+parseFloat(getComputedStyle(rail).gap||0);const first=Math.round(rail.scrollLeft/step)+1;const visible=Math.max(1,Math.round((rail.clientWidth+18)/step));if(count)count.textContent=first+'–'+Math.min(n,first+visible-1)+' / '+n;group.querySelectorAll('.thumb').forEach((b,i)=>b.setAttribute('aria-current',i===first-1?'true':'false'))}function move(dir){rail.scrollBy({left:dir*(rail.clientWidth+parseFloat(getComputedStyle(rail).gap||0)),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'})}prev.addEventListener('click',()=>move(-1));next.addEventListener('click',()=>move(1));rail.addEventListener('scroll',update,{passive:true});window.addEventListener('resize',update);group.querySelectorAll('.thumb').forEach((b,i)=>b.addEventListener('click',()=>rail.scrollTo({left:rail.children[i].offsetLeft-rail.children[0].offsetLeft,behavior:'smooth'})));update()});const dialog=document.querySelector('.lightbox');document.querySelectorAll('[data-zoom]').forEach(img=>{img.addEventListener('click',()=>{dialog.querySelector('img').src=img.src;dialog.querySelector('img').alt=img.alt;dialog.showModal()});img.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();img.click()}})});if(dialog){dialog.querySelector('button').addEventListener('click',()=>dialog.close());dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()})}
 
 document.querySelectorAll('.motion-toggle').forEach(button=>button.addEventListener('click',()=>{const section=button.closest('.tools-section');const paused=section.classList.toggle('is-paused');button.setAttribute('aria-pressed',String(paused));button.textContent=paused?'Resume motion':'Pause motion'}));
+
+// Track portfolio engagement without transmitting contact addresses or URL queries.
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href]');
+  if (!link || typeof window.gtag !== 'function') return;
+  const target = new URL(link.href, location.href);
+  let name;
+  let parameters;
+  if (target.protocol === 'mailto:') {
+    name = 'contact_click'; parameters = {contact_method: 'email'};
+  } else if (target.hostname === 'www.linkedin.com' || target.hostname === 'linkedin.com') {
+    name = 'contact_click'; parameters = {contact_method: 'linkedin'};
+  } else if (target.origin === location.origin && /^\/projects\/[^/]+\/(?:index\.html)?$/.test(target.pathname)) {
+    name = 'project_open'; parameters = {project_slug: target.pathname.split('/')[2]};
+  } else if (['apps.apple.com', 'play.google.com'].includes(target.hostname)) {
+    name = 'app_store_click'; parameters = {store: target.hostname, project_slug: location.pathname.split('/')[2] || 'home'};
+  }
+  if (name) window.gtag('event', name, {...parameters, transport_type: 'beacon'});
+});
